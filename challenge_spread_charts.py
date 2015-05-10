@@ -4,6 +4,7 @@ import numpy as np
 from datetime import datetime
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from tablib import Dataset
 
 mpl.interactive(False)
 
@@ -38,25 +39,44 @@ def generate_graph_vals(participants, time_val_name):
 
     return x_vals, y_vals
 
-def get_timestamp(dt):
-    return time.mktime(dt.timetuple())
-
-def get_logistic_regression_for(x_vals, y_vals):
-    return sm.Logit(y_vals, np.array([get_timestamp(val) for val in x_vals]))
-
-def render_graph():
+def get_graph_values():
     nom_x_vals, nom_y_vals = generate_graph_vals(get_challenge_nominated(), 'timeNominated')
-    # comp_x_vals, comp_y_vals = generate_graph_vals(get_challenge_completed(), 'timeCompleted')
-    # don_x_vals, don_y_vals = generate_graph_vals(get_challenge_donated(), 'donationDate')
+    comp_x_vals, comp_y_vals = generate_graph_vals(get_challenge_completed(), 'timeCompleted')
+    don_x_vals, don_y_vals = generate_graph_vals(get_challenge_donated(), 'donationDate')
+
+    return {
+        'nominated': (nom_x_vals, nom_y_vals),
+        'completed': (comp_x_vals, comp_y_vals),
+        'donated': (don_x_vals, don_y_vals)
+    }
+
+def render_graph(nominated_vals, completed_vals, donated_vals):
+    plt.xlabel('Date')
+    plt.ylabel('Total People')
 
     plt.gca().xaxis_date()
     plt.gcf().autofmt_xdate()
 
-    plt.plot(nom_x_vals, nom_y_vals, 'r-')
-    #plt.plot(nom_x_vals, nom_y_vals, 'r-', comp_x_vals, comp_y_vals, 'b-', don_x_vals, don_y_vals, 'g-')
+    nominated, = plt.plot(nominated_vals[0], nominated_vals[1], 'r-', label='nominated')
+    completed, = plt.plot(completed_vals[0], completed_vals[1], 'b-', label='completed')
+    donated, = plt.plot(donated_vals[0], donated_vals[1], 'g-', label='donated')
+
+    plt.legend([nominated, completed, donated], ['Nominated', 'Completed', 'Donated'], loc=2)
     
-    plt.xlabel('Date')
-    plt.ylabel('Num Challenged')
     plt.show()
 
-render_graph()
+def export_to_csv(vals, filename):
+    data = Dataset()
+
+    data.append_col(vals[0], header='Date')
+    data.append_col(vals[1], header='Total People')
+
+    file = open(filename, 'w')
+    file.write(data.csv)
+    file.close()
+
+graph_vals = get_graph_values()
+
+#export_to_csv(graph_vals['nominated'], 'nominated_graph.csv')
+
+render_graph(graph_vals['nominated'], graph_vals['completed'], graph_vals['donated'])
