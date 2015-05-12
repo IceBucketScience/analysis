@@ -20,7 +20,7 @@ def get_challenge_donated():
     return [node_data.p for node_data in graph.cypher.execute('MATCH (p:Person) WHERE has(p.donationDate) RETURN p')]
 
 def generate_graph_vals(participants, time_val_name):
-    sorted_participants = np.sort(sorted(participants, key=lambda p: p[time_val_name], reverse=True))
+    sorted_participants = np.array(sorted(participants, key=lambda p: p[time_val_name]))
     coord_pairs = np.array([])
 
     for participant in sorted_participants:
@@ -34,8 +34,8 @@ def generate_graph_vals(participants, time_val_name):
 
         coord_pairs[-1, 1] += 1
 
-    x_vals = np.sort(coord_pairs[ : , 0])
-    y_vals = np.sort(coord_pairs[ : , 1])
+    x_vals = coord_pairs[ : , 0]
+    y_vals = coord_pairs[ : , 1]
 
     return x_vals, y_vals
 
