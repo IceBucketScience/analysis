@@ -1,6 +1,7 @@
 from graph import Graph
 import pandas as pd
-import statsmodels.api as sm
+from scipy.stats import ttest_ind
+from plot_util import add_binary_jitter, get_binary_distribution, plot_binary_distribution, plot_normal_distributions
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -8,37 +9,32 @@ mpl.interactive(False)
 
 g = Graph()
 
-def calc_mutual_friends_index(p1, p2):
-    all_friends = pd.concat([p1.get_friends(), p2.get_friends()])
-    print all_friends.shape
-    mutual_friend_count = 0
-
-    for friend in all_friends:
-        if friend.is_friends_with(p1) and friend.is_friends_with(p2):
-            mutual_friend_count += 1
-
-    print p1.name, p2.name, mutual_friend_count
-
-    return mutual_friend_count/float(len(all_friends))
-
-def calc_mutual_friends_indexes(g):
+def calc_network_overlaps(g):
     nominations = g.get_nominations()
     
     raw_coord_pairs = []
 
     for index, nomination in nominations.iterrows():
-        coord_pair = {'mutual_friends_index': calc_mutual_friends_index(nomination['source'], nomination['target']), 'completed': 1 if nomination['target'].completed_challenge() else 0}
-        raw_coord_pairs.append(coord_pair)
+        if (not nomination['source'].is_volunteer and not nomination['target'].is_volunteer) or (nomination['target'].is_volunteer and nomination['source'].is_volunteer):
+            coord_pair = {'network_overlap': nomination['source'].get_network_overlap_with(nomination['target']), 'completed': 1 if nomination['target'].completed_challenge() else 0}
+            raw_coord_pairs.append(coord_pair)
 
     return pd.DataFrame(raw_coord_pairs)
 
-mutual_friends_indexes = calc_mutual_friends_indexes(g)
+network_overlaps = calc_network_overlaps(g)
 
-print mutual_friends_indexes.describe()
+binary_distribution = get_binary_distribution(network_overlaps, 'network_overlap', 'completed', 'completed', 'didnt_complete', 15)
+print binary_distribution
+#plot_binary_distribution(binary_distribution, 'network_overlap', 'network_overlap', 'pct_completed')
 
-logit = sm.Logit(mutual_friends_indexes['completed'], mutual_friends_indexes['mutual_friends_index'])
-result = logit.fit()
-print result.summary()
+#add_binary_jitter(network_overlaps, 'network_overlap', 'completed').plot(x='network_overlap', y='completed', kind='scatter', alpha=0.2)
 
-mutual_friends_indexes.plot(x='mutual_friends_index', y='completed', kind='scatter')
+didnt_complete = network_overlaps[network_overlaps['completed'] == 0].loc[:, 'network_overlap']
+completed = network_overlaps[network_overlaps['completed'] == 1].loc[:, 'network_overlap']
+
+plot_normal_distributions(didnt_complete, completed, 'didnt_complete', 'completed', 'network_overlap', 'frequency')
+
+print (didnt_complete.size, didnt_complete.mean()), (completed.size, completed.mean())
+print ttest_ind(didnt_complete.values, completed.values, equal_var=False)
+
 plt.show()

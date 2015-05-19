@@ -1,25 +1,13 @@
 from graph import Graph
 import pandas as pd
-import statsmodels.api as sm
+from scipy.stats import ttest_ind
+from plot_util import add_binary_jitter, get_binary_distribution, plot_binary_distribution, plot_normal_distributions
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 mpl.interactive(False)
 
 g = Graph()
-
-def compute_donation_exposure_pct(node):
-    friends = node.get_friends()
-    num_participants_at_completion = 0
-    num_donors_at_completion = 0
-
-    for friend in friends:
-        if friend.completed_challenge() and friend.time_completed < node.time_nominated:
-            num_participants_at_completion += 1
-        if friend.did_donate() and friend.time_donated < node.time_nominated:
-            num_donors_at_completion += 1
-
-    return num_donors_at_completion/float(num_participants_at_completion) if num_participants_at_completion > 0 else 0
 
 def compute_donation_exposure_pcts(g):
     participants = g.get_challenge_participants()
@@ -28,18 +16,25 @@ def compute_donation_exposure_pcts(g):
     raw_coord_pairs = []
 
     for participant in participants_w_min_friends:
-        coord_pair = {'donation_exposure_pct': compute_donation_exposure_pct(participant), 'donated': 1 if participant.did_donate() else 0}
+        coord_pair = {'donation_exposure_pct': participant.get_donation_exposure_pct(), 'donated': 1 if participant.did_donate() else 0}
         raw_coord_pairs.append(coord_pair)
 
     return pd.DataFrame(raw_coord_pairs)
 
 exposure_pcts = compute_donation_exposure_pcts(g)
 
-print exposure_pcts.describe()
+binary_distribution = get_binary_distribution(exposure_pcts, 'donation_exposure_pct', 'donated', 'donated', 'didnt_donate', 15)
+print binary_distribution
+#plot_binary_distribution(binary_distribution, 'donation_exposure_pct', 'donation_exposure_pct', 'pct_donated')
 
-logit = sm.Logit(exposure_pcts['donated'], exposure_pcts['donation_exposure_pct'])
-result = logit.fit()
-print result.summary()
+#add_binary_jitter(exposure_pcts, 'donation_exposure_pct', 'donated').plot(x='donation_exposure_pct', y='donated', kind='scatter', alpha=0.2)
 
-exposure_pcts.plot(x='donation_exposure_pct', y='donated', kind='scatter')
+didnt_donate = exposure_pcts[exposure_pcts['donated'] == 0].loc[:, 'donation_exposure_pct']
+donated = exposure_pcts[exposure_pcts['donated'] == 1].loc[:, 'donation_exposure_pct']
+
+plot_normal_distributions(didnt_donate, donated, 'didnt_donate', 'donated', 'donation_exposure_pct', 'frequency')
+
+print (didnt_donate.size, didnt_donate.mean()), (donated.size, donated.mean())
+print ttest_ind(didnt_donate.values, donated.values, equal_var=False)
+
 plt.show()

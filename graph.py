@@ -1,7 +1,7 @@
 import os
 from py2neo import Graph
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 
 graph = Graph(os.environ['DB_URI'])
 
@@ -44,6 +44,43 @@ class Node():
     def is_friends_with(self, node):
         return node.id in self.friends
 
+    def get_exposure_pct(self):
+        friends = self.get_friends()
+        num_participants_at_completion = 0
+
+        end_time = self.time_completed if self.completed_challenge() else self.time_nominated + timedelta(1)
+
+        for friend in friends:
+            if friend.completed_challenge() and friend.time_completed < end_time:
+                num_participants_at_completion += 1
+
+        return num_participants_at_completion/float(len(friends))
+
+    def get_donation_exposure_pct(self):
+        friends = self.get_friends()
+        num_participants_at_completion = 0
+        num_donors_at_completion = 0
+
+        for friend in friends:
+            end_time = self.time_completed if self.completed_challenge() else self.time_nominated + timedelta(1)
+
+            if friend.completed_challenge() and friend.time_completed < end_time:
+                num_participants_at_completion += 1
+            if friend.did_donate() and friend.time_donated < end_time:
+                num_donors_at_completion += 1
+
+        return num_donors_at_completion/float(num_participants_at_completion) if num_participants_at_completion > 0 else 0
+
+    def get_network_overlap_with(self, other_node):
+        all_friends = pd.concat([self.get_friends(), other_node.get_friends()]).drop_duplicates()
+        mutual_friend_count = 0
+
+        for friend in all_friends:
+            if friend.is_friends_with(self) and friend.is_friends_with(other_node):
+                mutual_friend_count += 1
+
+        return mutual_friend_count/float(len(all_friends))
+
 class Graph():
     def __init__(self):
         self.graph = graph
@@ -80,6 +117,9 @@ class Graph():
 
     def get_challenge_participants(self):
         return pd.Series([node for node in self.nodes if node.was_nominated()])
+
+    def get_completed(self):
+        return pd.Series([node for node in self.nodes if node.completed_challenge()])
 
     def get_donors(self):
         return pd.Series([node for node in self.nodes if node.did_donate()])
