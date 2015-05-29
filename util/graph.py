@@ -61,9 +61,9 @@ class Node():
         num_participants_at_completion = 0
         num_donors_at_completion = 0
 
-        for friend in friends:
-            end_time = self.time_completed if self.completed_challenge() else self.time_nominated + timedelta(1)
+        end_time = self.time_completed if self.completed_challenge() else self.time_nominated + timedelta(1)
 
+        for friend in friends:
             if friend.completed_challenge() and friend.time_completed < end_time:
                 num_participants_at_completion += 1
             if friend.did_donate() and friend.time_donated < end_time:

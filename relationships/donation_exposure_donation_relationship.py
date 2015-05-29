@@ -1,7 +1,7 @@
-from graph import Graph
+from util.graph import Graph
 import pandas as pd
-from scipy.stats import ttest_ind
-from plot_util import add_binary_jitter, get_binary_distribution, plot_binary_distribution, plot_normal_distributions
+from util.significance import test_significance
+from util.plot import add_binary_jitter, get_binary_distribution, plot_binary_distribution, plot_normal_distributions
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -11,7 +11,7 @@ g = Graph()
 
 def compute_donation_exposure_pcts(g):
     participants = g.get_challenge_participants()
-    participants_w_min_friends = [participant for participant in participants if len(participant.get_friends()) > 50]
+    participants_w_min_friends = [participant for participant in participants if len(participant.get_friends()) >= 50]
 
     raw_coord_pairs = []
 
@@ -34,7 +34,6 @@ donated = exposure_pcts[exposure_pcts['donated'] == 1].loc[:, 'donation_exposure
 
 plot_normal_distributions(didnt_donate, donated, 'didnt_donate', 'donated', 'donation_exposure_pct', 'frequency')
 
-print (didnt_donate.size, didnt_donate.mean()), (donated.size, donated.mean())
-print ttest_ind(didnt_donate.values, donated.values, equal_var=False)
+test_significance(didnt_donate, donated)
 
 plt.show()

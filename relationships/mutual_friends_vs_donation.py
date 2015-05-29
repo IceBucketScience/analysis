@@ -1,7 +1,7 @@
-from graph import Graph
+from util.graph import Graph
 import pandas as pd
-from scipy.stats import ttest_ind
-from plot_util import add_binary_jitter, get_binary_distribution, plot_binary_distribution, plot_normal_distributions
+from util.significance import test_significance
+from util.plot import add_binary_jitter, get_binary_distribution, plot_binary_distribution, plot_normal_distributions
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -26,15 +26,14 @@ network_overlaps = calc_network_overlaps(g)
 binary_distribution = get_binary_distribution(network_overlaps, 'network_overlap', 'donated', 'donated', 'didnt_donate', 15)
 print binary_distribution
 #plot_binary_distribution(binary_distribution, 'network_overlap', 'network_overlap', 'pct_donated')
-
+network_overlaps.plot(x='network_overlap', y='donated', kind='scatter')
 #add_binary_jitter(network_overlaps, 'network_overlap', 'donated').plot(x='network_overlap', y='donated', kind='scatter', alpha=0.2)
 
 didnt_donate = network_overlaps[network_overlaps['donated'] == 0].loc[:, 'network_overlap']
 donated = network_overlaps[network_overlaps['donated'] == 1].loc[:, 'network_overlap']
 
-plot_normal_distributions(didnt_donate, donated, 'didnt_donate', 'donated', 'network_overlap', 'frequency')
+#plot_normal_distributions(didnt_donate, donated, 'didnt_donate', 'donated', 'network_overlap', 'frequency')
 
-print (didnt_donate.size, didnt_donate.mean()), (donated.size, donated.mean())
-print ttest_ind(didnt_donate.values, donated.values, equal_var=False)
+test_significance(didnt_donate, donated)
 
 plt.show()

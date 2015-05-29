@@ -1,3 +1,4 @@
+
 import os
 from py2neo import Graph
 import numpy as np
@@ -61,7 +62,7 @@ def render_graph(nominated_vals, completed_vals, donated_vals):
     completed, = plt.plot(completed_vals[0], completed_vals[1], 'b-', label='completed')
     donated, = plt.plot(donated_vals[0], donated_vals[1], 'g-', label='donated')
 
-    plt.legend([nominated, completed, donated], ['Nominated', 'Completed', 'Donated'], loc=2)
+    plt.legend([nominated, completed, donated], ['Nominations', 'Completions', 'Donations'], loc=2)
     
     plt.show()
 
